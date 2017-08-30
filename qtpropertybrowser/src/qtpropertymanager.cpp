@@ -1304,12 +1304,13 @@ public:
     struct Data
     {
         Data() : regExp(QString(QLatin1Char('*')),  Qt::CaseSensitive, QRegExp::Wildcard),
-            echoMode(QLineEdit::Normal), readOnly(false)
+            echoMode(QLineEdit::Normal), waitFinished(false), readOnly(false)
         {
         }
         QString val;
         QRegExp regExp;
         int echoMode;
+		bool waitFinished;
         bool readOnly;
     };
 
@@ -1408,6 +1409,11 @@ QRegExp QtStringPropertyManager::regExp(const QtProperty *property) const
 EchoMode QtStringPropertyManager::echoMode(const QtProperty *property) const
 {
     return (EchoMode)getData<int>(d_ptr->m_values, &QtStringPropertyManagerPrivate::Data::echoMode, property, 0);
+}
+
+bool QtStringPropertyManager::waitFinished(const QtProperty *property) const
+{
+	return getData<bool>(d_ptr->m_values, &QtStringPropertyManagerPrivate::Data::waitFinished, property, false);
 }
 
 /*!
@@ -1521,6 +1527,24 @@ void QtStringPropertyManager::setEchoMode(QtProperty *property, EchoMode echoMod
 
     emit propertyChanged(property);
     emit echoModeChanged(property, data.echoMode);
+}
+
+void QtStringPropertyManager::setWaitFinished(QtProperty *property, bool waitFinished)
+{
+	const QtStringPropertyManagerPrivate::PropertyValueMap::iterator it = d_ptr->m_values.find(property);
+	if (it == d_ptr->m_values.end())
+		return;
+
+	QtStringPropertyManagerPrivate::Data data = it.value();
+
+	if (data.waitFinished == waitFinished)
+		return;
+
+	data.waitFinished = waitFinished;
+	it.value() = data;
+
+	emit propertyChanged(property);
+	emit waitFinishedChanged(property, data.waitFinished);
 }
 
 /*!

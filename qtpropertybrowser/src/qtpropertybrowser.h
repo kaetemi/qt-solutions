@@ -87,6 +87,8 @@ public:
     QString propertyId() const;
     bool isEnabled() const;
     bool isModified() const;
+    bool isPropertyDefault() const;
+    bool isPropertyTarget() const;
 
     bool hasValue() const;
     QIcon valueIcon() const;
@@ -102,6 +104,8 @@ public:
     void setPropertyId(const QString &text);
     void setEnabled(bool enable);
     void setModified(bool modified);
+    void setPropertyDefault(bool propertyDefault);
+    void setPropertyTarget(bool propertyTarget);
 
     bool isSubProperty()const;
     void addSubProperty(QtProperty *property);
@@ -143,6 +147,7 @@ protected:
     virtual QString valueText(const QtProperty *property) const;
     virtual QString displayText(const QtProperty *property) const;
     virtual EchoMode echoMode(const QtProperty *) const;
+	virtual bool waitFinished(const QtProperty *) const;
     virtual void initializeProperty(QtProperty *property) = 0;
     virtual void uninitializeProperty(QtProperty *property);
     virtual QtProperty *createProperty();

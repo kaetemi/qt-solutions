@@ -978,6 +978,7 @@ public:
     void slotRegExpChanged(QtProperty *property, const QRegExp &regExp);
     void slotSetValue(const QString &value);
     void slotEchoModeChanged(QtProperty *, int);
+	void slotWaitFinishedChanged(QtProperty *, bool);
     void slotReadOnlyChanged(QtProperty *, bool);
 };
 
@@ -1040,6 +1041,31 @@ void QtLineEditFactoryPrivate::slotEchoModeChanged(QtProperty *property, int ech
         editor->setEchoMode((EchoMode)echoMode);
         editor->blockSignals(false);
     }
+}
+
+void QtLineEditFactoryPrivate::slotWaitFinishedChanged(QtProperty *property, bool waitFinished)
+{
+	if (!m_createdEditors.contains(property))
+		return;
+
+	QtStringPropertyManager *manager = q_ptr->propertyManager(property);
+	if (!manager)
+		return;
+
+	QListIterator<QLineEdit *> itEditor(m_createdEditors[property]);
+	while (itEditor.hasNext()) {
+		QLineEdit *editor = itEditor.next();
+		if (waitFinished)
+		{
+			QtLineEditFactory::disconnect(editor, SIGNAL(textChanged(const QString &)),
+				this->q_ptr, SLOT(slotSetValue(const QString &)));
+		}
+		else
+		{
+			QtLineEditFactory::connect(editor, SIGNAL(textChanged(const QString &)),
+				this->q_ptr, SLOT(slotSetValue(const QString &)));
+		}
+	}
 }
 
 void QtLineEditFactoryPrivate::slotReadOnlyChanged( QtProperty *property, bool readOnly)
@@ -1119,6 +1145,8 @@ void QtLineEditFactory::connectPropertyManager(QtStringPropertyManager *manager)
             this, SLOT(slotRegExpChanged(QtProperty *, const QRegExp &)));
     connect(manager, SIGNAL(echoModeChanged(QtProperty*, int)),
             this, SLOT(slotEchoModeChanged(QtProperty *, int)));
+	connect(manager, SIGNAL(waitFinishedChanged(QtProperty*, bool)),
+		this, SLOT(slotWaitFinishedChanged(QtProperty *, bool)));
     connect(manager, SIGNAL(readOnlyChanged(QtProperty*, bool)),
         this, SLOT(slotReadOnlyChanged(QtProperty *, bool)));
 }
@@ -1142,8 +1170,15 @@ QWidget *QtLineEditFactory::createEditor(QtStringPropertyManager *manager,
     }
     editor->setText(manager->value(property));
 
-    connect(editor, SIGNAL(textChanged(const QString &)),
-                this, SLOT(slotSetValue(const QString &)));
+	
+	connect(editor, &QLineEdit::editingFinished, this, [this, editor]() -> void {
+		QMetaObject::invokeMethod(this, "slotSetValue", Q_ARG(const QString &, editor->text()));
+	});
+	if (!manager->waitFinished(property))
+	{
+		connect(editor, SIGNAL(textChanged(const QString &)),
+			this, SLOT(slotSetValue(const QString &)));
+	}
     connect(editor, SIGNAL(destroyed(QObject *)),
                 this, SLOT(slotEditorDestroyed(QObject *)));
     return editor;
@@ -1162,6 +1197,8 @@ void QtLineEditFactory::disconnectPropertyManager(QtStringPropertyManager *manag
                 this, SLOT(slotRegExpChanged(QtProperty *, const QRegExp &)));
     disconnect(manager, SIGNAL(echoModeChanged(QtProperty*,int)),
                 this, SLOT(slotEchoModeChanged(QtProperty *, int)));
+	disconnect(manager, SIGNAL(waitFinishedChanged(QtProperty*, bool)),
+		this, SLOT(waitFinishedChanged(QtProperty *, bool)));
     disconnect(manager, SIGNAL(readOnlyChanged(QtProperty*, bool)),
         this, SLOT(slotReadOnlyChanged(QtProperty *, bool)));
 

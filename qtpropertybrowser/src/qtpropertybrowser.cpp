@@ -59,6 +59,8 @@ public:
     QtPropertyPrivate(QtAbstractPropertyManager *manager)
         : m_enabled(true),
           m_modified(false),
+          m_propertyDefault(false),
+          m_propertyTarget(false),
           m_manager(manager) {}
     QtProperty *q_ptr;
 
@@ -72,6 +74,8 @@ public:
     QString m_id;
     bool m_enabled;
     bool m_modified;
+    bool m_propertyDefault;
+    bool m_propertyTarget;
 
     QtAbstractPropertyManager * const m_manager;
 };
@@ -119,6 +123,10 @@ public:
     \o isEnabled() \o setEnabled()
     \row
     \o isModified() \o setModified()
+    \row
+    \o isPropertyDefault() \o setPropertyDefault()
+    \row
+    \o isPropertyTarget() \o setPropertyTarget()
     \row
     \o valueText() \o Nop
     \row
@@ -276,6 +284,26 @@ bool QtProperty::isModified() const
 }
 
 /*!
+    Returns whether the property is the default value.
+
+    \sa setPropertyDefault()
+*/
+bool QtProperty::isPropertyDefault() const
+{
+    return d_ptr->m_propertyDefault;
+}
+
+/*!
+    Returns whether the property is target specific.
+
+    \sa setPropertyTarget()
+*/
+bool QtProperty::isPropertyTarget() const
+{
+    return d_ptr->m_propertyTarget;
+}
+
+/*!
     Returns whether the property has a value.
 
     \sa QtAbstractPropertyManager::hasValue()
@@ -339,7 +367,9 @@ bool QtProperty::compare(QtProperty* otherProperty)const
           && this->statusTip() == otherProperty->statusTip()
           && this->whatsThis() == otherProperty->whatsThis()
           && this->isEnabled() == otherProperty->isEnabled()
-          && this->isModified() == otherProperty->isModified());
+          && this->isModified() == otherProperty->isModified()
+          && this->isPropertyDefault() == otherProperty->isPropertyDefault()
+          && this->isPropertyTarget() == otherProperty->isPropertyTarget());
 }
 
 /*!
@@ -440,6 +470,34 @@ void QtProperty::setModified(bool modified)
         return;
 
     d_ptr->m_modified = modified;
+    propertyChanged();
+}
+
+/*!
+    Sets the property's propertyDefault state according to the passed \a propertyDefault value.
+
+    \sa isPropertyDefault()
+*/
+void QtProperty::setPropertyDefault(bool propertyDefault)
+{
+    if (d_ptr->m_propertyDefault == propertyDefault)
+        return;
+
+    d_ptr->m_propertyDefault = propertyDefault;
+    propertyChanged();
+}
+
+/*!
+    Sets the property's modified state according to the passed \a modified value.
+
+    \sa isPropertyTarget()
+*/
+void QtProperty::setPropertyTarget(bool propertyTarget)
+{
+    if (d_ptr->m_propertyTarget == propertyTarget)
+        return;
+
+    d_ptr->m_propertyTarget = propertyTarget;
     propertyChanged();
 }
 
@@ -814,6 +872,12 @@ EchoMode QtAbstractPropertyManager::echoMode(const QtProperty *property) const
 {
     Q_UNUSED(property)
     return QLineEdit::Normal;
+}
+
+bool QtAbstractPropertyManager::waitFinished(const QtProperty *property) const
+{
+	Q_UNUSED(property)
+	return false;
 }
 
 /*!

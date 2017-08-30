@@ -461,6 +461,8 @@ void QtButtonPropertyBrowserPrivate::updateItem(WidgetItem *item)
     if (item->button) {
         QFont font = item->button->font();
         font.setUnderline(property->isModified());
+        font.setItalic(property->isPropertyDefault());
+        font.setBold(property->isPropertyTarget());
         item->button->setFont(font);
         item->button->setText(property->propertyName());
         item->button->setToolTip(property->toolTip());
@@ -471,6 +473,8 @@ void QtButtonPropertyBrowserPrivate::updateItem(WidgetItem *item)
     if (item->label) {
         QFont font = item->label->font();
         font.setUnderline(property->isModified());
+        font.setItalic(property->isPropertyDefault());
+        font.setBold(property->isPropertyTarget());
         item->label->setFont(font);
         item->label->setText(property->propertyName());
         item->label->setToolTip(property->toolTip());
@@ -481,6 +485,8 @@ void QtButtonPropertyBrowserPrivate::updateItem(WidgetItem *item)
     if (item->widgetLabel) {
         QFont font = item->widgetLabel->font();
         font.setUnderline(false);
+        font.setItalic(false);
+        font.setBold(false);
         item->widgetLabel->setFont(font);
         item->widgetLabel->setText(property->valueText());
         item->widgetLabel->setToolTip(property->valueText());
@@ -489,6 +495,8 @@ void QtButtonPropertyBrowserPrivate::updateItem(WidgetItem *item)
     if (item->widget) {
         QFont font = item->widget->font();
         font.setUnderline(false);
+        font.setItalic(false);
+        font.setBold(false);
         item->widget->setFont(font);
         item->widget->setEnabled(property->isEnabled());
         item->widget->setToolTip(property->valueText());
