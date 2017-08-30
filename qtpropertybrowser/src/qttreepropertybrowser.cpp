@@ -355,6 +355,14 @@ void QtPropertyEditorDelegate::paint(QPainter *painter, const QStyleOptionViewIt
             opt.font.setBold(true);
             opt.fontMetrics = QFontMetrics(opt.font);
         }
+        if (property && property->isPropertyDefault()) {
+            opt.font.setItalic(true);
+            opt.fontMetrics = QFontMetrics(opt.font);
+        }
+        if (property && property->isPropertyTarget()) {
+            opt.font.setBold(true);
+            opt.fontMetrics = QFontMetrics(opt.font);
+        }
     }
     QColor c;
     if (!hasValue && m_editorPrivate->markPropertiesWithoutValue()) {

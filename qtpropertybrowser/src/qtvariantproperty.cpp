@@ -330,6 +330,7 @@ public:
     void slotValueChanged(QtProperty *property, const QString &val);
     void slotRegExpChanged(QtProperty *property, const QRegExp &regExp);
     void slotEchoModeChanged(QtProperty *property, int);
+	void slotWaitFinishedChanged(QtProperty *property, bool);
     void slotValueChanged(QtProperty *property, const QDate &val);
     void slotRangeChanged(QtProperty *property, const QDate &min, const QDate &max);
     void slotValueChanged(QtProperty *property, const QTime &val);
@@ -388,6 +389,7 @@ public:
     const QString m_minimumAttribute;
     const QString m_regExpAttribute;
     const QString m_echoModeAttribute;
+	const QString m_waitFinishedAttribute;
     const QString m_readOnlyAttribute;
     const QString m_textVisibleAttribute;
 };
@@ -403,6 +405,7 @@ QtVariantPropertyManagerPrivate::QtVariantPropertyManagerPrivate() :
     m_minimumAttribute(QLatin1String("minimum")),
     m_regExpAttribute(QLatin1String("regExp")),
     m_echoModeAttribute(QLatin1String("echoMode")),
+	m_waitFinishedAttribute(QLatin1String("waitFinished")),
     m_readOnlyAttribute(QLatin1String("readOnly")),
     m_textVisibleAttribute(QLatin1String("textVisible"))
 {
@@ -564,6 +567,12 @@ void QtVariantPropertyManagerPrivate::slotEchoModeChanged(QtProperty *property, 
 {
     if (QtVariantProperty *varProp = m_internalToProperty.value(property, 0))
         emit q_ptr->attributeChanged(varProp, m_echoModeAttribute, QVariant(mode));
+}
+
+void QtVariantPropertyManagerPrivate::slotWaitFinishedChanged(QtProperty *property, bool waitFinished)
+{
+	if (QtVariantProperty *varProp = m_internalToProperty.value(property, 0))
+		emit q_ptr->attributeChanged(varProp, m_waitFinishedAttribute, QVariant(waitFinished));
 }
 
 void QtVariantPropertyManagerPrivate::slotReadOnlyChanged(QtProperty *property, bool readOnly)
@@ -1033,6 +1042,8 @@ QtVariantPropertyManager::QtVariantPropertyManager(QObject *parent)
             QVariant::RegExp;
     d_ptr->m_typeToAttributeToAttributeType[QVariant::String][d_ptr->m_echoModeAttribute] =
             QVariant::Int;
+	d_ptr->m_typeToAttributeToAttributeType[QVariant::String][d_ptr->m_waitFinishedAttribute] =
+		QVariant::Bool;
     d_ptr->m_typeToAttributeToAttributeType[QVariant::String][d_ptr->m_readOnlyAttribute] =
         QVariant::Bool;
 
@@ -1042,6 +1053,8 @@ QtVariantPropertyManager::QtVariantPropertyManager(QObject *parent)
                 this, SLOT(slotRegExpChanged(QtProperty *, const QRegExp &)));
     connect(stringPropertyManager, SIGNAL(echoModeChanged(QtProperty*,int)),
                 this, SLOT(slotEchoModeChanged(QtProperty*, int)));
+	connect(stringPropertyManager, SIGNAL(waitFinishedChanged(QtProperty*, bool)),
+		this, SLOT(slotWaitFinishedChanged(QtProperty*, bool)));
     connect(stringPropertyManager, SIGNAL(readOnlyChanged(QtProperty*, bool)),
                 this, SLOT(slotReadOnlyChanged(QtProperty*, bool)));
 
@@ -1390,6 +1403,8 @@ void addPropertyRecusively(QtVariantPropertyManager * manager,
   newProp->setStatusTip(prop->statusTip());
   newProp->setWhatsThis(prop->whatsThis());
   newProp->setModified(prop->isModified());
+  newProp->setPropertyDefault(prop->isPropertyDefault());
+  newProp->setPropertyTarget(prop->isPropertyTarget());
   newProp->setEnabled(prop->isEnabled());
   newProp->setValue(prop->value());
 
@@ -1592,6 +1607,8 @@ QVariant QtVariantPropertyManager::attributeValue(const QtProperty *property, co
             return stringManager->regExp(internProp);
         if (attribute == d_ptr->m_echoModeAttribute)
             return stringManager->echoMode(internProp);
+		if (attribute == d_ptr->m_waitFinishedAttribute)
+			return stringManager->waitFinished(internProp);
         if (attribute == d_ptr->m_readOnlyAttribute)
             return stringManager->isReadOnly(internProp);
         return QVariant();
@@ -1698,14 +1715,17 @@ int QtVariantPropertyManager::attributeType(int propertyType, const QString &att
 */
 void QtVariantPropertyManager::setValue(QtProperty *property, const QVariant &val)
 {
-    int propType = val.userType();
-    if (!propType)
-        return;
+	if (val.isValid())
+	{
+		int propType = val.userType();
+		if (!propType)
+			return;
 
-    int valType = valueType(property);
+		int valType = valueType(property);
 
-    if (propType != valType && !val.canConvert(static_cast<QVariant::Type>(valType)))
-        return;
+		if (propType != valType && !val.canConvert(static_cast<QVariant::Type>(valType)))
+			return;
+	}
 
     QtProperty *internProp = propertyToWrappedProperty()->value(property, 0);
     if (internProp == 0)
@@ -1847,8 +1867,10 @@ void QtVariantPropertyManager::setAttribute(QtProperty *property,
             stringManager->setRegExp(internProp, value.value<QRegExp>());
         if (attribute == d_ptr->m_echoModeAttribute)
 			stringManager->setEchoMode(internProp, (EchoMode)value.value<int>());
+		if (attribute == d_ptr->m_waitFinishedAttribute)
+			stringManager->setWaitFinished(internProp, value.value<bool>());
         if (attribute == d_ptr->m_readOnlyAttribute)
-			stringManager->setReadOnly(internProp, (EchoMode)value.value<bool>());
+			stringManager->setReadOnly(internProp, value.value<bool>());
         return;
     } else if (QtDatePropertyManager *dateManager = qobject_cast<QtDatePropertyManager *>(manager)) {
         if (attribute == d_ptr->m_maximumAttribute)
